@@ -146,6 +146,7 @@
         
         #game-header { position: absolute; top: 0; left: 0; width: 100%; height: 60px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; border-bottom: 1px solid var(--border); background: var(--bg); z-index: 5; box-sizing: border-box;}
         #game-timer { font-size: 1.2rem; color: var(--accent); font-variant-numeric: tabular-nums; }
+        #hint-text { font-size: 0.7rem; color: #666; text-transform: uppercase; letter-spacing: 1px; }
         
         #maze-container { margin-top: 60px; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; padding: 20px; gap: 15px; width: 100%; height: calc(100% - 60px); overflow: hidden; }
         .maze-wrapper { border: 2px solid var(--border); position: relative; touch-action: none; }
@@ -153,7 +154,26 @@
         .maze-wrapper.shake { animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both; }
         @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
         
-        #mute-btn { position: absolute; bottom: 20px; right: 20px; border: none; font-size: 1.5rem; opacity: 0.5; z-index: 200; background: var(--bg); border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--border); }
+        /* UPDATED MUTE BUTTON STYLES */
+        #mute-btn { 
+            position: absolute; 
+            top: 20px; 
+            right: 20px; 
+            border: none; 
+            background: transparent;
+            color: var(--wall);
+            width: 40px; 
+            height: 40px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer;
+            opacity: 0.7;
+            padding: 0;
+        }
+        #mute-btn svg { width: 24px; height: 24px; fill: currentColor; }
+        #mute-btn:hover { opacity: 1; transform: scale(1.1); background: transparent; }
+
         .slider-container { margin: 20px 0; text-align: center; width: 100%; max-width: 300px; }
         input[type="range"] { width: 100%; margin-bottom: 10px; accent-color: var(--wall); }
         .how-to-content { max-width: 600px; text-align: left; padding: 20px; line-height: 1.6; font-size: 0.9rem; }
@@ -190,6 +210,11 @@
     <div id="app-root">
         <!-- MAIN MENU -->
         <div id="screen-menu" class="screen">
+            <!-- MUTE BUTTON MOVED HERE -->
+            <button id="mute-btn" onclick="AudioSys.toggle()">
+                <!-- SVG Icon inserted by JS -->
+            </button>
+
             <h1>COHERENCE</h1>
             <h2>The Alignment Protocol</h2>
             <div class="btn-group">
@@ -199,8 +224,6 @@
             </div>
         </div>
         
-        <button id="mute-btn" onclick="AudioSys.toggle()">🔊</button>
-
         <!-- HOW TO PLAY -->
         <div id="screen-how-to" class="screen hidden">
             <h1>INSTRUCTIONS</h1>
@@ -261,6 +284,8 @@
             <div id="game-header">
                 <button id="back-btn" onclick="Game.showMenu()">EXIT</button>
                 <span id="level-info">LEVEL 1</span>
+                <!-- RESTORED HINT TEXT -->
+                <span id="hint-text">SWIPE A MAZE TO LEAD</span>
                 <div id="game-timer">00.00</div>
             </div>
             <div id="maze-container"></div>
@@ -270,7 +295,7 @@
     <script>
         /* --- PWA INSTALLER --- */
         const PWA={deferredPrompt:null,init(){
-            // Standard Service Worker Registration (No Environment Checks)
+            // Standard Service Worker Registration
             if('serviceWorker'in navigator){
                 navigator.serviceWorker.register('./sw.js')
                     .then(()=>console.log('SW Registered'))
@@ -299,7 +324,28 @@
         },triggerInstall(){if(this.deferredPrompt){this.deferredPrompt.prompt();this.deferredPrompt.userChoice.then((r)=>{if(r.outcome==='accepted')this.deferredPrompt=null;});}},forceStart(){this.launchGame();},launchGame(){document.getElementById('installer-screen').style.display='none';document.getElementById('app-root').style.display='block';Game.init();document.body.addEventListener('click',()=>{if(!AudioSys.ctx)AudioSys.init();},{once:true});}};
 
         /* --- AUDIO ENGINE --- */
-        const AudioSys={ctx:null,muted:false,bgmOsc:null,bgmGain:null,musicTimer:null,scale:[130.81,155.56,174.61,196.00,233.08,261.63],init(){window.AudioContext=window.AudioContext||window.webkitAudioContext;this.ctx=new AudioContext();this.startBGM();},toggle(){this.muted=!this.muted;document.getElementById('mute-btn').innerText=this.muted?'🔇':'🔊';if(this.ctx){if(this.muted)this.ctx.suspend();else this.ctx.resume();}else{this.init();}},playTone(freq,type,duration,vol=0.1,slide=false){if(this.muted||!this.ctx)return;const osc=this.ctx.createOscillator();const gain=this.ctx.createGain();osc.type=type;osc.frequency.setValueAtTime(freq,this.ctx.currentTime);if(slide)osc.frequency.exponentialRampToValueAtTime(freq*0.5,this.ctx.currentTime+duration);gain.gain.setValueAtTime(0,this.ctx.currentTime);gain.gain.linearRampToValueAtTime(vol,this.ctx.currentTime+0.02);gain.gain.exponentialRampToValueAtTime(0.001,this.ctx.currentTime+duration);osc.connect(gain);gain.connect(this.ctx.destination);osc.start();osc.stop(this.ctx.currentTime+duration);},playMove(){this.playTone(220,'triangle',0.2,0.05);},playWall(){this.playTone(100,'sawtooth',0.1,0.08,true);},playSlide(){this.playTone(440,'sine',0.4,0.02);},playWin(){if(this.muted||!this.ctx)return;[261.63,329.63,392.00,523.25].forEach((f,i)=>setTimeout(()=>this.playTone(f,'triangle',1.0,0.1),i*100));},playLose(){this.playTone(150,'sawtooth',0.5,0.2,true);setTimeout(()=>this.playTone(110,'sawtooth',0.5,0.2,true),200);},playClick(){this.playTone(800,'sine',0.05,0.1);},startBGM(){if(!this.ctx||this.bgmOsc)return;this.bgmOsc=this.ctx.createOscillator();this.bgmGain=this.ctx.createGain();this.bgmOsc.type='sine';this.bgmOsc.frequency.value=65.41;const lfo=this.ctx.createOscillator();lfo.type='sine';lfo.frequency.value=0.05;const lfoGain=this.ctx.createGain();lfoGain.gain.value=20;lfo.connect(this.bgmOsc.frequency);this.bgmOsc.connect(this.bgmGain);this.bgmGain.connect(this.ctx.destination);this.bgmGain.gain.value=0.05;this.bgmOsc.start();lfo.start();this.musicLoop();},musicLoop(){if(this.muted||!this.ctx){this.musicTimer=setTimeout(()=>this.musicLoop(),1000);return;}if(Math.random()>0.6){const note=this.scale[Math.floor(Math.random()*this.scale.length)];const freq=Math.random()>0.8?note*2:note;this.playTone(freq,'sine',2.0,0.03);}this.musicTimer=setTimeout(()=>this.musicLoop(),2000+Math.random()*3000);}};
+        const AudioSys={
+            ctx:null,muted:false,bgmOsc:null,bgmGain:null,musicTimer:null,scale:[130.81,155.56,174.61,196.00,233.08,261.63],
+            // SVG ICONS FOR MUTE BUTTON
+            icons: {
+                on: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>',
+                off: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>'
+            },
+            init(){
+                window.AudioContext=window.AudioContext||window.webkitAudioContext;this.ctx=new AudioContext();this.startBGM();
+                this.updateIcon();
+            },
+            toggle(){
+                this.muted=!this.muted;
+                if(this.ctx){if(this.muted)this.ctx.suspend();else this.ctx.resume();}else{this.init();}
+                this.updateIcon();
+            },
+            updateIcon(){
+                const btn = document.getElementById('mute-btn');
+                if(btn) btn.innerHTML = this.muted ? this.icons.off : this.icons.on;
+            },
+            playTone(freq,type,duration,vol=0.1,slide=false){if(this.muted||!this.ctx)return;const osc=this.ctx.createOscillator();const gain=this.ctx.createGain();osc.type=type;osc.frequency.setValueAtTime(freq,this.ctx.currentTime);if(slide)osc.frequency.exponentialRampToValueAtTime(freq*0.5,this.ctx.currentTime+duration);gain.gain.setValueAtTime(0,this.ctx.currentTime);gain.gain.linearRampToValueAtTime(vol,this.ctx.currentTime+0.02);gain.gain.exponentialRampToValueAtTime(0.001,this.ctx.currentTime+duration);osc.connect(gain);gain.connect(this.ctx.destination);osc.start();osc.stop(this.ctx.currentTime+duration);},playMove(){this.playTone(220,'triangle',0.2,0.05);},playWall(){this.playTone(100,'sawtooth',0.1,0.08,true);},playSlide(){this.playTone(440,'sine',0.4,0.02);},playWin(){if(this.muted||!this.ctx)return;[261.63,329.63,392.00,523.25].forEach((f,i)=>setTimeout(()=>this.playTone(f,'triangle',1.0,0.1),i*100));},playLose(){this.playTone(150,'sawtooth',0.5,0.2,true);setTimeout(()=>this.playTone(110,'sawtooth',0.5,0.2,true),200);},playClick(){this.playTone(800,'sine',0.05,0.1);},startBGM(){if(!this.ctx||this.bgmOsc)return;this.bgmOsc=this.ctx.createOscillator();this.bgmGain=this.ctx.createGain();this.bgmOsc.type='sine';this.bgmOsc.frequency.value=65.41;const lfo=this.ctx.createOscillator();lfo.type='sine';lfo.frequency.value=0.05;const lfoGain=this.ctx.createGain();lfoGain.gain.value=20;lfo.connect(this.bgmOsc.frequency);this.bgmOsc.connect(this.bgmGain);this.bgmGain.connect(this.ctx.destination);this.bgmGain.gain.value=0.05;this.bgmOsc.start();lfo.start();this.musicLoop();},musicLoop(){if(this.muted||!this.ctx){this.musicTimer=setTimeout(()=>this.musicLoop(),1000);return;}if(Math.random()>0.6){const note=this.scale[Math.floor(Math.random()*this.scale.length)];const freq=Math.random()>0.8?note*2:note;this.playTone(freq,'sine',2.0,0.03);}this.musicTimer=setTimeout(()=>this.musicLoop(),2000+Math.random()*3000);}
+        };
 
         /* --- SAVE SYSTEM --- */
         const Storage = {
@@ -336,6 +382,10 @@
                 Storage.load();
                 this.generateLevels();
                 this.setupLevelGrid();
+                
+                // Init Icon
+                AudioSys.updateIcon();
+
                 requestAnimationFrame(this.loop.bind(this));
                 document.addEventListener('keydown', this.handleKey.bind(this));
                 const c = document.getElementById('maze-container');
@@ -385,7 +435,7 @@
             showLevelSelect() { this.showScreen('screen-levels'); },
             showCustomSetup() { this.showScreen('screen-custom'); },
             showHowTo() { this.showScreen('screen-how-to'); },
-            updateDiffLabel(val) { const labels = ['TUTORIAL','EASY','NORMAL','HARD','NIGHTMARE']; document.getElementById('diff-val').innerText = labels[val - 1]; },
+            updateDiffLabel(val) { const labels = ['TUTORIAL', 'EASY', 'NORMAL', 'HARD', 'NIGHTMARE']; document.getElementById('diff-val').innerText = labels[val - 1]; },
             startLevel(lvlNum) { this.mode = 'campaign'; this.currentLevel = lvlNum; const config = this.levels[lvlNum - 1]; this.currentParTime = config.par; this.startSession(config.m, config.s); },
             startCustom() { this.mode = 'custom'; const count = parseInt(document.getElementById('custom-slider').value); const diffVal = parseInt(document.getElementById('difficulty-slider').value); const sizes = [11, 15, 21, 31, 41]; this.currentParTime = 0; this.startSession(count, sizes[diffVal - 1]); },
             restartLevel() { if (this.mode === 'campaign') this.startLevel(this.currentLevel); else this.startCustom(); },
