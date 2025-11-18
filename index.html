@@ -51,6 +51,10 @@
             user-select: none;
         }
 
+        h1, h2, h3, button, input {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
         /* --- CRT Scanline Effect --- */
         .scanlines {
             position: fixed;
@@ -59,6 +63,19 @@
             background-size: 100% 2px, 3px 100%;
             pointer-events: none;
             z-index: 9999;
+            opacity: 1;
+            transition: opacity 0.5s;
+        }
+        .scanlines.off { opacity: 0; }
+
+        /* --- MENU BACKGROUND ANIMATION --- */
+        #menu-bg-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            opacity: 0.3;
+            pointer-events: none;
         }
 
         /* --- INSTALLER LANDING PAGE --- */
@@ -126,18 +143,84 @@
         /* Styles */
         .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--ui-bg); z-index: 10; transition: opacity 0.3s; }
         .hidden { display: none !important; opacity: 0; pointer-events: none; }
-        .btn-group { display: flex; flex-direction: column; gap: 15px; width: 80%; max-width: 300px; }
         
-        button { background: transparent; color: var(--wall); border: 2px solid var(--wall); padding: 15px; font-family: inherit; font-size: 1rem; font-weight: 800; text-transform: uppercase; cursor: pointer; transition: all 0.1s; position: relative; overflow: hidden; }
-        button:hover { background: var(--wall); color: var(--bg); transform: translateY(-2px); }
+        .btn-group { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            width: 80%; 
+            max-width: 300px;
+            z-index: 2; 
+        }
+        
+        button { 
+            background: rgba(0,0,0,0.6); 
+            color: var(--wall); 
+            border: 1px solid var(--wall); 
+            padding: 15px; 
+            font-family: 'JetBrains Mono', monospace; /* EXPLICIT FONT */
+            font-size: 1rem; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            position: relative; 
+            overflow: hidden;
+            letter-spacing: 2px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        button::before { content: '['; opacity: 0; margin-right: 10px; transition: opacity 0.2s; color: var(--sector-1); }
+        button::after { content: ']'; opacity: 0; margin-left: 10px; transition: opacity 0.2s; color: var(--sector-1); }
+        
+        button:hover { background: var(--wall); color: var(--bg); border-color: var(--accent); padding-left: 25px; padding-right: 25px;}
+        button:hover::before, button:hover::after { opacity: 1; color: var(--bg); }
+        
         button:disabled { opacity: 0.3; cursor: not-allowed; transform: none !important; border-color: #555; color: #555; }
+        button:disabled:hover { padding: 15px; background: transparent; color: #555; }
+        button:disabled::before, button:disabled::after { display: none; }
+
+        /* Specific Menu Title Styles */
+        .menu-title { 
+            font-size: 3.5rem; 
+            margin-bottom: 0.5rem; 
+            text-shadow: 0 0 10px rgba(255,255,255,0.5); 
+            z-index: 2; 
+            letter-spacing: -3px; /* RESTORED ORIGINAL TIGHT SPACING */
+        }
+        .menu-subtitle { 
+            font-size: 0.8rem; 
+            color: #888; 
+            margin-bottom: 3rem; 
+            letter-spacing: 4px; 
+            text-transform: uppercase; 
+            z-index: 2; 
+            border-top: 1px solid #333;
+            border-bottom: 1px solid #333;
+            padding: 5px 20px;
+        }
+
+        .version-tag {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            font-size: 0.7rem;
+            color: #444;
+            z-index: 2;
+        }
 
         #level-select-container { width: 90%; max-width: 600px; height: 60%; overflow-y: auto; padding-right: 10px; scrollbar-width: thin; scrollbar-color: var(--wall) var(--bg); }
         .level-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 20px; }
         
         .level-btn { 
             padding: 10px 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+            justify-content: center !important; /* Override button flex */
         }
+        .level-btn::before, .level-btn::after { display: none; } /* No brackets for grid */
+        .level-btn:hover { padding: 10px 0; } /* Reset hover padding */
+
         .level-btn .stars { font-size: 0.6rem; color: var(--gold); height: 10px; line-height: 10px; }
         .level-btn.locked { border-color: #333; color: #333; background: #111; }
         .level-btn.locked:hover { background: #111; color: #333; transform: none; box-shadow: none; }
@@ -148,17 +231,15 @@
         #game-timer { font-size: 1.2rem; color: var(--accent); font-variant-numeric: tabular-nums; }
         #hint-text { font-size: 0.7rem; color: #666; text-transform: uppercase; letter-spacing: 1px; }
         
-        /* FIXED: Added #game-ui explicit styling to ensure full height */
         #game-ui { width: 100%; height: 100%; position: absolute; top: 0; left: 0; overflow: hidden; }
 
-        /* FIXED: Added align-content: center to center the cluster of mazes vertically */
         #maze-container { 
             margin-top: 60px; 
             display: flex; 
             flex-wrap: wrap; 
             justify-content: center; 
             align-items: center; 
-            align-content: center; /* This forces the wrapped content to center vertically */
+            align-content: center;
             padding: 20px; 
             gap: 15px; 
             width: 100%; 
@@ -172,43 +253,65 @@
         .maze-wrapper.shake { animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both; }
         @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
         
-        /* UPDATED MUTE BUTTON STYLES */
+        /* MUTE BUTTON - now part of settings, but kept here for in-game if needed (hidden in menu now) */
         #mute-btn { 
-            position: absolute; 
-            top: 20px; 
-            right: 20px; 
-            border: none; 
-            background: transparent;
-            color: var(--wall);
-            width: 40px; 
-            height: 40px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            cursor: pointer;
-            opacity: 0.7;
-            padding: 0;
+            display: none; /* Moved functionality to settings */
         }
-        #mute-btn svg { width: 24px; height: 24px; fill: currentColor; }
-        #mute-btn:hover { opacity: 1; transform: scale(1.1); background: transparent; }
 
         .slider-container { margin: 20px 0; text-align: center; width: 100%; max-width: 300px; }
-        input[type="range"] { width: 100%; margin-bottom: 10px; accent-color: var(--wall); }
+        input[type="range"] { width: 100%; margin-bottom: 10px; accent-color: var(--wall); height: 4px; background: #333; border-radius: 2px; appearance: none; }
+        input[type="range"]::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; background: var(--wall); border-radius: 50%; cursor: pointer; }
+        
         .how-to-content { max-width: 600px; text-align: left; padding: 20px; line-height: 1.6; font-size: 0.9rem; }
         .key-term { color: var(--accent); font-weight: bold; } .danger-term { color: var(--danger); font-weight: bold; }
 
-        /* Result Screen Stars */
         #result-stars { font-size: 3rem; color: var(--gold); margin: 10px 0 20px 0; letter-spacing: 10px; }
         #result-time { font-size: 1.2rem; color: #888; margin-bottom: 20px; }
 
-        /* Pause Screen */
         #screen-pause { background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); z-index: 200; }
+
+        /* Confirmation Modal */
+        #screen-confirm-reset { background: rgba(0,0,0,0.95); z-index: 300; }
+        #screen-confirm-reset h1 { color: var(--danger); }
+        #screen-confirm-reset p { color: var(--wall); text-align: center; max-width: 80%; margin-bottom: 30px; line-height: 1.5; }
+
+        /* --- SETTINGS SCREEN STYLES --- */
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #222;
+            padding-bottom: 15px;
+        }
+        .setting-label { font-size: 1rem; color: var(--wall); text-transform: uppercase; letter-spacing: 1px; }
+        
+        /* Toggle Switch */
+        .toggle-switch { position: relative; width: 50px; height: 24px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: #888; transition: .4s; }
+        input:checked + .slider { background-color: var(--wall); }
+        input:checked + .slider:before { transform: translateX(26px); background-color: var(--bg); }
+
+        .reset-btn { border-color: var(--danger); color: var(--danger); margin-top: 20px; }
+        .reset-btn:hover { background: var(--danger); color: white; border-color: var(--danger); }
+
+        /* Small back button for sub-menus */
+        .back-btn-small {
+            margin-top: 20px;
+            padding: 10px 30px;
+            width: auto;
+            display: inline-block;
+        }
 
     </style>
 </head>
 <body>
 
-    <div class="scanlines"></div>
+    <div class="scanlines" id="scanlines-overlay"></div>
 
     <!-- 1. INSTALLER SCREEN -->
     <div id="installer-screen">
@@ -231,20 +334,58 @@
     <div id="app-root">
         <!-- MAIN MENU -->
         <div id="screen-menu" class="screen">
-            <!-- MUTE BUTTON MOVED HERE -->
-            <button id="mute-btn" onclick="AudioSys.toggle()">
-                <!-- SVG Icon inserted by JS -->
-            </button>
-
-            <h1>COHERENCE</h1>
-            <h2>The Alignment Protocol</h2>
+            <canvas id="menu-bg-canvas"></canvas> <!-- Animated BG -->
+            
+            <h1 class="menu-title">COHERENCE</h1>
+            <div class="menu-subtitle">The Alignment Protocol</div>
+            
             <div class="btn-group">
-                <button onclick="Game.showLevelSelect()">Campaign</button>
-                <button onclick="Game.showCustomSetup()">Custom Simulation</button>
-                <button onclick="Game.showHowTo()">How to Play</button>
+                <button onclick="Game.showLevelSelect()"><span>Campaign</span></button>
+                <button onclick="Game.showCustomSetup()"><span>Custom Sim</span></button>
+                <button onclick="Game.showSettings()"><span>Settings</span></button>
+                <button onclick="Game.showHowTo()"><span>Manual</span></button>
             </div>
+            <div class="version-tag">SYS v1.2.0</div>
         </div>
         
+        <!-- SETTINGS SCREEN -->
+        <div id="screen-settings" class="screen hidden">
+            <h1>SYSTEM CONFIG</h1>
+            <div style="width: 100%; max-width: 400px; padding: 20px; background: rgba(0,0,0,0.5); border: 1px solid #333;">
+                
+                <!-- Graphics -->
+                <div class="setting-row">
+                    <span class="setting-label">Scanlines</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="opt-scanlines" onchange="Settings.toggle('scanlines')">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-row">
+                    <span class="setting-label">Particles</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="opt-particles" onchange="Settings.toggle('particles')">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <!-- Audio -->
+                <div class="setting-row" style="display: block;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom: 10px;">
+                        <span class="setting-label">Master Volume</span>
+                        <span id="vol-display" style="font-size: 0.8rem; color: #888;">50%</span>
+                    </div>
+                    <input type="range" id="opt-volume" min="0" max="100" oninput="Settings.setVolume(this.value)">
+                </div>
+
+                <!-- Data -->
+                 <button class="reset-btn" onclick="Settings.resetData()">RESET SAVE DATA</button>
+
+            </div>
+            <button class="back-btn-small" onclick="Game.showMenu()">Back</button>
+        </div>
+
         <!-- HOW TO PLAY -->
         <div id="screen-how-to" class="screen hidden">
             <h1>INSTRUCTIONS</h1>
@@ -259,7 +400,7 @@
                 </ul>
                 <p><span class="danger-term">WIN CONDITION:</span> All players must land on the goal on the EXACT SAME TURN.</p>
             </div>
-            <button onclick="Game.showMenu()" style="margin-top: 20px">Back</button>
+            <button class="back-btn-small" onclick="Game.showMenu()">Back</button>
         </div>
 
         <!-- LEVEL SELECT -->
@@ -268,7 +409,7 @@
             <div id="level-select-container">
                 <div class="level-grid" id="level-grid"></div>
             </div>
-            <button onclick="Game.showMenu()" style="margin-top: 20px">Back</button>
+            <button class="back-btn-small" onclick="Game.showMenu()">Back</button>
         </div>
 
         <!-- CUSTOM SETUP -->
@@ -284,7 +425,7 @@
             </div>
             <div class="btn-group" style="margin-top: 20px;">
                 <button onclick="Game.startCustom()">INITIATE</button>
-                <button onclick="Game.showMenu()">ABORT</button>
+                <button class="back-btn-small" onclick="Game.showMenu()">ABORT</button>
             </div>
         </div>
 
@@ -295,6 +436,16 @@
                 <button onclick="Game.togglePause()">RESUME</button>
                 <button onclick="Game.restartLevel()">RESTART LEVEL</button>
                 <button onclick="Game.quitGame()">EXIT TO MENU</button>
+            </div>
+        </div>
+
+        <!-- RESET CONFIRMATION SCREEN -->
+        <div id="screen-confirm-reset" class="screen hidden">
+            <h1>WARNING</h1>
+            <p>PERMANENTLY ERASE ALL CAMPAIGN DATA?<br>THIS OPERATION CANNOT BE UNDONE.</p>
+            <div class="btn-group">
+                <button onclick="Settings.confirmReset()" style="border-color: var(--danger); color: var(--danger);">CONFIRM ERASE</button>
+                <button onclick="Settings.cancelReset()">CANCEL</button>
             </div>
         </div>
 
@@ -313,9 +464,8 @@
         <!-- IN-GAME UI -->
         <div id="game-ui" class="hidden">
             <div id="game-header">
-                <button id="back-btn" onclick="Game.togglePause()">PAUSE</button>
+                <button id="back-btn" style="width: auto; padding: 5px 15px; font-size: 0.8rem;" onclick="Game.togglePause()">PAUSE</button>
                 <span id="level-info">LEVEL 1</span>
-                <!-- RESTORED HINT TEXT -->
                 <span id="hint-text">SWIPE A MAZE TO LEAD</span>
                 <div id="game-timer">00.00</div>
             </div>
@@ -325,57 +475,139 @@
 
     <script>
         /* --- PWA INSTALLER --- */
-        const PWA={deferredPrompt:null,init(){
-            // Standard Service Worker Registration
-            if('serviceWorker'in navigator){
-                navigator.serviceWorker.register('./sw.js')
-                    .then(()=>console.log('SW Registered'))
-                    .catch((e)=>console.log('SW Failed:',e));
-            }
-            
-            const isStandalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
-            
-            if(isStandalone){
-                this.launchGame();
-            }else{
-                window.addEventListener('beforeinstallprompt',(e)=>{
-                    e.preventDefault();
-                    this.deferredPrompt=e;
-                    const btn=document.getElementById('install-trigger');
-                    btn.style.display='block';
-                    btn.addEventListener('click',()=>this.triggerInstall());
-                });
+        const PWA={deferredPrompt:null,init(){if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js').then(()=>console.log('SW Registered')).catch((e)=>console.log('SW Failed:',e));}const isStandalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;if(isStandalone){this.launchGame();}else{window.addEventListener('beforeinstallprompt',(e)=>{e.preventDefault();this.deferredPrompt=e;const btn=document.getElementById('install-trigger');btn.style.display='block';btn.addEventListener('click',()=>this.triggerInstall());});const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;if(isIOS){document.getElementById('install-trigger').style.display='none';document.getElementById('ios-guide').style.display='block';}}},triggerInstall(){if(this.deferredPrompt){this.deferredPrompt.prompt();this.deferredPrompt.userChoice.then((r)=>{if(r.outcome==='accepted')this.deferredPrompt=null;});}},forceStart(){this.launchGame();},launchGame(){document.getElementById('installer-screen').style.display='none';document.getElementById('app-root').style.display='block';Game.init();document.body.addEventListener('click',()=>{if(!AudioSys.ctx)AudioSys.init();},{once:true});}};
 
-                const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
-                if(isIOS){
-                    document.getElementById('install-trigger').style.display='none';
-                    document.getElementById('ios-guide').style.display='block';
-                }
+        /* --- SETTINGS SYSTEM --- */
+        const Settings = {
+            data: { scanlines: true, particles: true, volume: 0.5 },
+            init() {
+                const saved = localStorage.getItem('coherence_settings');
+                if(saved) this.data = JSON.parse(saved);
+                
+                // Apply UI states
+                document.getElementById('opt-scanlines').checked = this.data.scanlines;
+                document.getElementById('opt-particles').checked = this.data.particles;
+                document.getElementById('opt-volume').value = this.data.volume * 100;
+                document.getElementById('vol-display').innerText = Math.round(this.data.volume * 100) + "%";
+
+                // Apply effects
+                this.apply();
+            },
+            toggle(key) {
+                this.data[key] = !this.data[key];
+                this.save();
+                this.apply();
+            },
+            setVolume(val) {
+                this.data.volume = val / 100;
+                document.getElementById('vol-display').innerText = val + "%";
+                this.save();
+                this.apply();
+            },
+            apply() {
+                // Scanlines
+                const sl = document.getElementById('scanlines-overlay');
+                if(this.data.scanlines) sl.classList.remove('off'); else sl.classList.add('off');
+                
+                // Audio
+                if(AudioSys.bgmGain) AudioSys.bgmGain.gain.value = 0.05 * this.data.volume;
+            },
+            save() { localStorage.setItem('coherence_settings', JSON.stringify(this.data)); },
+            resetData() {
+                // Show custom modal instead of native confirm
+                document.getElementById('screen-confirm-reset').classList.remove('hidden');
+            },
+            confirmReset() {
+                // 1. Clear visual storage
+                localStorage.removeItem(Storage.key);
+                
+                // 2. Reset internal state
+                Storage.data = { unlocked: 1, stars: {} };
+                Storage.save();
+
+                // 3. Refresh UI immediately
+                Game.setupLevelGrid();
+
+                // 4. Close modal without reload
+                document.getElementById('screen-confirm-reset').classList.add('hidden');
+                
+                // 5. Optional: Play sound to confirm
+                if(AudioSys.ctx) AudioSys.playLose(); // Use the 'low' tone as a system reset sound
+            },
+            cancelReset() {
+                document.getElementById('screen-confirm-reset').classList.add('hidden');
             }
-        },triggerInstall(){if(this.deferredPrompt){this.deferredPrompt.prompt();this.deferredPrompt.userChoice.then((r)=>{if(r.outcome==='accepted')this.deferredPrompt=null;});}},forceStart(){this.launchGame();},launchGame(){document.getElementById('installer-screen').style.display='none';document.getElementById('app-root').style.display='block';Game.init();document.body.addEventListener('click',()=>{if(!AudioSys.ctx)AudioSys.init();},{once:true});}};
+        };
 
         /* --- AUDIO ENGINE --- */
         const AudioSys={
             ctx:null,muted:false,bgmOsc:null,bgmGain:null,musicTimer:null,scale:[130.81,155.56,174.61,196.00,233.08,261.63],
-            // SVG ICONS FOR MUTE BUTTON
-            icons: {
-                on: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>',
-                off: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>'
-            },
             init(){
                 window.AudioContext=window.AudioContext||window.webkitAudioContext;this.ctx=new AudioContext();this.startBGM();
-                this.updateIcon();
             },
-            toggle(){
-                this.muted=!this.muted;
-                if(this.ctx){if(this.muted)this.ctx.suspend();else this.ctx.resume();}else{this.init();}
-                this.updateIcon();
+            playTone(freq,type,duration,vol=0.1,slide=false){
+                if(!this.ctx)return;
+                // Apply Master Volume
+                vol = vol * Settings.data.volume;
+                if(vol <= 0.001) return;
+
+                const osc=this.ctx.createOscillator();const gain=this.ctx.createGain();osc.type=type;osc.frequency.setValueAtTime(freq,this.ctx.currentTime);if(slide)osc.frequency.exponentialRampToValueAtTime(freq*0.5,this.ctx.currentTime+duration);gain.gain.setValueAtTime(0,this.ctx.currentTime);gain.gain.linearRampToValueAtTime(vol,this.ctx.currentTime+0.02);gain.gain.exponentialRampToValueAtTime(0.001,this.ctx.currentTime+duration);osc.connect(gain);gain.connect(this.ctx.destination);osc.start();osc.stop(this.ctx.currentTime+duration);
             },
-            updateIcon(){
-                const btn = document.getElementById('mute-btn');
-                if(btn) btn.innerHTML = this.muted ? this.icons.off : this.icons.on;
+            playMove(){this.playTone(220,'triangle',0.2,0.05);},playWall(){this.playTone(100,'sawtooth',0.1,0.08,true);},playSlide(){this.playTone(440,'sine',0.4,0.02);},
+            playWin(){if(!this.ctx)return;[261.63,329.63,392.00,523.25].forEach((f,i)=>setTimeout(()=>this.playTone(f,'triangle',1.0,0.1),i*100));},
+            playLose(){this.playTone(150,'sawtooth',0.5,0.2,true);setTimeout(()=>this.playTone(110,'sawtooth',0.5,0.2,true),200);},
+            playClick(){this.playTone(800,'sine',0.05,0.1);},
+            startBGM(){
+                if(!this.ctx||this.bgmOsc)return;
+                this.bgmOsc=this.ctx.createOscillator();this.bgmGain=this.ctx.createGain();this.bgmOsc.type='sine';this.bgmOsc.frequency.value=65.41;
+                const lfo=this.ctx.createOscillator();lfo.type='sine';lfo.frequency.value=0.05;
+                const lfoGain=this.ctx.createGain();lfoGain.gain.value=20;lfo.connect(this.bgmOsc.frequency);
+                this.bgmOsc.connect(this.bgmGain);this.bgmGain.connect(this.ctx.destination);
+                // Initial Volume set by Settings
+                this.bgmGain.gain.value=0.05 * Settings.data.volume;
+                this.bgmOsc.start();lfo.start();this.musicLoop();
             },
-            playTone(freq,type,duration,vol=0.1,slide=false){if(this.muted||!this.ctx)return;const osc=this.ctx.createOscillator();const gain=this.ctx.createGain();osc.type=type;osc.frequency.setValueAtTime(freq,this.ctx.currentTime);if(slide)osc.frequency.exponentialRampToValueAtTime(freq*0.5,this.ctx.currentTime+duration);gain.gain.setValueAtTime(0,this.ctx.currentTime);gain.gain.linearRampToValueAtTime(vol,this.ctx.currentTime+0.02);gain.gain.exponentialRampToValueAtTime(0.001,this.ctx.currentTime+duration);osc.connect(gain);gain.connect(this.ctx.destination);osc.start();osc.stop(this.ctx.currentTime+duration);},playMove(){this.playTone(220,'triangle',0.2,0.05);},playWall(){this.playTone(100,'sawtooth',0.1,0.08,true);},playSlide(){this.playTone(440,'sine',0.4,0.02);},playWin(){if(this.muted||!this.ctx)return;[261.63,329.63,392.00,523.25].forEach((f,i)=>setTimeout(()=>this.playTone(f,'triangle',1.0,0.1),i*100));},playLose(){this.playTone(150,'sawtooth',0.5,0.2,true);setTimeout(()=>this.playTone(110,'sawtooth',0.5,0.2,true),200);},playClick(){this.playTone(800,'sine',0.05,0.1);},startBGM(){if(!this.ctx||this.bgmOsc)return;this.bgmOsc=this.ctx.createOscillator();this.bgmGain=this.ctx.createGain();this.bgmOsc.type='sine';this.bgmOsc.frequency.value=65.41;const lfo=this.ctx.createOscillator();lfo.type='sine';lfo.frequency.value=0.05;const lfoGain=this.ctx.createGain();lfoGain.gain.value=20;lfo.connect(this.bgmOsc.frequency);this.bgmOsc.connect(this.bgmGain);this.bgmGain.connect(this.ctx.destination);this.bgmGain.gain.value=0.05;this.bgmOsc.start();lfo.start();this.musicLoop();},musicLoop(){if(this.muted||!this.ctx){this.musicTimer=setTimeout(()=>this.musicLoop(),1000);return;}if(Math.random()>0.6){const note=this.scale[Math.floor(Math.random()*this.scale.length)];const freq=Math.random()>0.8?note*2:note;this.playTone(freq,'sine',2.0,0.03);}this.musicTimer=setTimeout(()=>this.musicLoop(),2000+Math.random()*3000);}
+            musicLoop(){
+                if(!this.ctx){this.musicTimer=setTimeout(()=>this.musicLoop(),1000);return;}
+                if(Settings.data.volume > 0 && Math.random()>0.6){
+                    const note=this.scale[Math.floor(Math.random()*this.scale.length)];
+                    const freq=Math.random()>0.8?note*2:note;
+                    this.playTone(freq,'sine',2.0,0.03);
+                }
+                this.musicTimer=setTimeout(()=>this.musicLoop(),2000+Math.random()*3000);
+            }
+        };
+
+        /* --- MENU BACKGROUND ANIMATION --- */
+        const MenuAnim = {
+            ctx: null, w: 0, h: 0, streams: [], active: false,
+            init() {
+                const cvs = document.getElementById('menu-bg-canvas');
+                this.ctx = cvs.getContext('2d');
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+                // Init streams
+                const cols = Math.floor(this.w / 20);
+                for(let i=0; i<cols; i++) this.streams.push({x: i*20, y: Math.random()*this.h, s: Math.random()*2+1, l: Math.random()*10+5});
+            },
+            resize() {
+                const cvs = document.getElementById('menu-bg-canvas');
+                this.w = cvs.width = window.innerWidth;
+                this.h = cvs.height = window.innerHeight;
+            },
+            start() { this.active = true; this.loop(); },
+            stop() { this.active = false; },
+            loop() {
+                if(!this.active) return;
+                this.ctx.clearRect(0, 0, this.w, this.h);
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+                this.streams.forEach(s => {
+                    this.ctx.fillRect(s.x, s.y, 2, s.l * 10);
+                    s.y += s.s;
+                    if(s.y > this.h) s.y = -100;
+                });
+                requestAnimationFrame(this.loop.bind(this));
+            }
         };
 
         /* --- SAVE SYSTEM --- */
@@ -412,11 +644,12 @@
             
             init() {
                 Storage.load();
+                Settings.init(); // Init Settings
+                MenuAnim.init();
+                MenuAnim.start(); // Start Menu BG
+                
                 this.generateLevels();
                 this.setupLevelGrid();
-                
-                // Init Icon
-                AudioSys.updateIcon();
 
                 requestAnimationFrame(this.loop.bind(this));
                 document.addEventListener('keydown', this.handleKey.bind(this));
@@ -430,7 +663,6 @@
                 document.addEventListener('click', (e) => { if (e.target.closest('button') && !e.target.disabled) AudioSys.playClick(); });
             },
             generateLevels() {
-                // Added par_base (seconds) to calculate stars
                 for(let i=1;i<=20;i++) this.levels.push({m:2, s:11+(Math.floor((i-1)/5)*4), c:'SECTOR 1: GENESIS', col:'var(--sector-1)', par: 10 + i});
                 for(let i=21;i<=40;i++) this.levels.push({m:3, s:15+(Math.floor((i-21)/5)*2), c:'SECTOR 2: EXPANSION', col:'var(--sector-2)', par: 15 + (i-20)*2});
                 for(let i=41;i<=60;i++) this.levels.push({m:4+(i>50?1:0), s:19+(Math.floor((i-41)/10)*6), c:'SECTOR 3: CONVERGENCE', col:'var(--sector-3)', par: 30 + (i-40)*3});
@@ -445,14 +677,12 @@
                     const btn = document.createElement('button'); 
                     btn.className = 'level-btn'; 
                     
-                    // Lock Logic
                     if(levelNum > Storage.data.unlocked) {
                         btn.classList.add('locked');
                         btn.disabled = true;
                         btn.innerHTML = `<span>🔒</span><span style="font-size:0.8rem">${levelNum}</span>`;
                     } else {
                         btn.style.borderColor = lvl.col;
-                        // Stars Logic
                         const stars = Storage.getStars(levelNum);
                         let starStr = '';
                         for(let s=0; s<3; s++) starStr += s < stars ? '★' : '·';
@@ -464,41 +694,38 @@
             },
             showScreen(id) { document.querySelectorAll('.screen, #game-ui').forEach(el => el.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); },
             
-            // Updated Menu handling
-            showMenu() { this.active = false; clearInterval(this.timerInterval); this.showScreen('screen-menu'); AudioSys.startBGM(); this.setupLevelGrid(); },
-            
-            // Quit Game Logic (used by Pause Menu)
-            quitGame() {
-                this.paused = false;
-                this.showMenu();
+            showMenu() { 
+                this.active = false; 
+                MenuAnim.start(); // Start BG Anim
+                clearInterval(this.timerInterval); 
+                this.showScreen('screen-menu'); 
+                AudioSys.startBGM(); 
+                this.setupLevelGrid(); 
             },
-
-            showLevelSelect() { this.showScreen('screen-levels'); },
-            showCustomSetup() { this.showScreen('screen-custom'); },
-            showHowTo() { this.showScreen('screen-how-to'); },
+            
+            quitGame() { this.paused = false; this.showMenu(); },
+            showLevelSelect() { MenuAnim.stop(); this.showScreen('screen-levels'); },
+            showCustomSetup() { MenuAnim.stop(); this.showScreen('screen-custom'); },
+            showHowTo() { MenuAnim.stop(); this.showScreen('screen-how-to'); },
+            showSettings() { MenuAnim.stop(); this.showScreen('screen-settings'); },
             updateDiffLabel(val) { const labels = ['TUTORIAL', 'EASY', 'NORMAL', 'HARD', 'NIGHTMARE']; document.getElementById('diff-val').innerText = labels[val - 1]; },
             startLevel(lvlNum) { this.mode = 'campaign'; this.currentLevel = lvlNum; const config = this.levels[lvlNum - 1]; this.currentParTime = config.par; this.startSession(config.m, config.s); },
             startCustom() { this.mode = 'custom'; const count = parseInt(document.getElementById('custom-slider').value); const diffVal = parseInt(document.getElementById('difficulty-slider').value); const sizes = [11, 15, 21, 31, 41]; this.currentParTime = 0; this.startSession(count, sizes[diffVal - 1]); },
             
-            // Updated restart to handle pause state
             restartLevel() { 
                 this.paused = false;
                 if (this.mode === 'campaign') this.startLevel(this.currentLevel); else this.startCustom(); 
             },
             nextLevel() { if (this.currentLevel < this.levels.length) this.startLevel(this.currentLevel + 1); else this.showMenu(); },
             
-            // PAUSE SYSTEM
             togglePause() {
                 if (!this.active) return;
                 this.paused = !this.paused;
-
                 if(this.paused) {
-                    // Stop Timer
                     this.pauseStart = Date.now();
                     clearInterval(this.timerInterval);
                     document.getElementById('screen-pause').classList.remove('hidden');
                 } else {
-                    // Resume Timer
                     this.totalPausedTime += (Date.now() - this.pauseStart);
                     this.timerInterval = setInterval(() => this.updateTimerDisplay(), 100);
                     document.getElementById('screen-pause').classList.add('hidden');
@@ -506,6 +733,7 @@
             },
 
             startSession(count, size) {
+                MenuAnim.stop(); // Stop BG Anim
                 this.active = true; this.mazes = []; this.COLS = size; this.ROWS = size; this.inputStart = null;
                 this.paused = false; this.totalPausedTime = 0;
                 
@@ -517,10 +745,7 @@
                 document.getElementById('next-lvl-btn').style.display = this.mode === 'campaign' ? 'block' : 'none';
                 this.showScreen('game-ui');
                 
-                // Ensure pause screen is hidden
                 document.getElementById('screen-pause').classList.add('hidden');
-
-                // Start Timer
                 this.startTime = Date.now();
                 this.updateTimerDisplay();
                 if(this.timerInterval) clearInterval(this.timerInterval);
@@ -563,9 +788,12 @@
                 ctx.fillStyle = '#fff'; ctx.shadowBlur = 10; ctx.shadowColor = "white"; ctx.fillRect(maze.player.x*this.CELL_SIZE + 1, maze.player.y*this.CELL_SIZE + 1, this.CELL_SIZE - 2, this.CELL_SIZE - 2); ctx.shadowBlur = 0;
                 if (this.inputStart && this.inputCurrent && maze.id === this.inputIndex) { ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; ctx.lineWidth = 2; ctx.beginPath(); const cx = ctx.canvas.width / 2; const cy = ctx.canvas.height / 2; const dx = this.inputCurrent.x - this.inputStart.x; const dy = this.inputCurrent.y - this.inputStart.y; ctx.moveTo(cx - 20, cy); ctx.lineTo(cx + 20, cy); ctx.moveTo(cx, cy - 20); ctx.lineTo(cx, cy + 20); ctx.moveTo(cx, cy); ctx.lineTo(cx + dx, cy + dy); ctx.stroke(); }
             },
-            spawnParticles(maze, x, y, color, count=5, type='trail') { const px = x * this.CELL_SIZE + this.CELL_SIZE/2; const py = y * this.CELL_SIZE + this.CELL_SIZE/2; for(let i=0; i<count; i++) { maze.particles.push(new Particle(px, py, color, type)); } },
+            spawnParticles(maze, x, y, color, count=5, type='trail') { 
+                if(!Settings.data.particles) return; // Check Setting
+                const px = x * this.CELL_SIZE + this.CELL_SIZE/2; const py = y * this.CELL_SIZE + this.CELL_SIZE/2; for(let i=0; i<count; i++) { maze.particles.push(new Particle(px, py, color, type)); } 
+            },
             handleInput(dx, dy, leaderIndex) {
-                if (!this.active || this.paused) return; // CHECK PAUSE
+                if (!this.active || this.paused) return; 
                 leaderIndex = leaderIndex !== undefined ? leaderIndex : 0; const leader = this.mazes[leaderIndex];
                 this.mazes.forEach(m => m.wrapper.classList.remove('active-leader')); leader.wrapper.classList.add('active-leader'); setTimeout(() => leader.wrapper.classList.remove('active-leader'), 300);
                 let steps = 0; let tx = leader.player.x; let ty = leader.player.y;
@@ -582,7 +810,6 @@
                 const screen = document.getElementById('screen-result'); 
                 screen.classList.remove('hidden'); 
                 
-                // TIME CALCULATION UPDATED FOR PAUSE
                 const elapsed = (Date.now() - this.startTime - this.totalPausedTime) / 1000;
 
                 if(count === this.mazes.length) { 
@@ -591,31 +818,21 @@
                     AudioSys.playWin(); 
                     this.mazes.forEach(m => this.spawnParticles(m, m.goal.x, m.goal.y, '#fff', 30, 'spark')); 
                     
-                    // Time & Stars Logic
                     document.getElementById('result-time').innerText = `TIME: ${elapsed.toFixed(2)}s`;
                     
                     let stars = 0;
                     if (this.mode === 'campaign') {
-                        // Unlock next level
                         Storage.unlockLevel(this.currentLevel + 1);
-                        
-                        // Calculate Stars (Simple logic: Beat par time)
-                        // 3 stars = < Par Time
-                        // 2 stars = < Par Time * 1.5
-                        // 1 star = Completed
                         if (elapsed <= this.currentParTime) stars = 3;
                         else if (elapsed <= this.currentParTime * 1.5) stars = 2;
                         else stars = 1;
-                        
                         Storage.setStars(this.currentLevel, stars);
                     } else {
-                        stars = 1; // Custom mode just gets 1 star for finishing
+                        stars = 1; 
                     }
-                    
                     const starStr = '★'.repeat(stars) + '☆'.repeat(3-stars);
                     document.getElementById('result-stars').innerText = starStr;
                     document.getElementById('result-stars').style.display = 'block';
-
                 } else { 
                     title.innerText = "SYNC FAILED"; 
                     title.style.color = "#ff3333"; 
@@ -624,17 +841,13 @@
                     document.getElementById('result-stars').style.display = 'none';
                 } 
             },
-            handleKey(e) { if(!this.active || this.paused) return; if(e.key === 'ArrowUp' || e.key === 'w') this.handleInput(0, -1); if(e.key === 'ArrowDown' || e.key === 's') this.handleInput(0, 1); if(e.key === 'ArrowLeft' || e.key === 'a') this.handleInput(-1, 0); if(e.key === 'ArrowRight' || e.key === 'd') this.handleInput(1, 0); if(e.key === 'Escape') this.togglePause(); }, // Added ESC to pause
+            handleKey(e) { if(!this.active || this.paused) return; if(e.key === 'ArrowUp' || e.key === 'w') this.handleInput(0, -1); if(e.key === 'ArrowDown' || e.key === 's') this.handleInput(0, 1); if(e.key === 'ArrowLeft' || e.key === 'a') this.handleInput(-1, 0); if(e.key === 'ArrowRight' || e.key === 'd') this.handleInput(1, 0); if(e.key === 'Escape') this.togglePause(); },
             handleTouchStart(e) { if(!this.active || this.paused) return; const wrapper = e.target.closest('.maze-wrapper'); if(!wrapper) return; this.inputIndex = parseInt(wrapper.dataset.index); const evt = e.touches ? e.touches[0] : e; this.inputStart = { x: evt.clientX, y: evt.clientY }; this.inputCurrent = { x: evt.clientX, y: evt.clientY }; },
             handleTouchMove(e) { if (!this.inputStart || !this.active || this.paused) return; const evt = e.touches ? e.touches[0] : e; this.inputCurrent = { x: evt.clientX, y: evt.clientY }; },
             handleTouchEnd(e) { if(!this.inputStart || !this.active || this.paused) return; const evt = e.changedTouches ? e.changedTouches[0] : e; const dx = evt.clientX - this.inputStart.x; const dy = evt.clientY - this.inputStart.y; if(Math.abs(dx) > 30 || Math.abs(dy) > 30) { if(Math.abs(dx) > Math.abs(dy)) { this.handleInput(dx>0?1:-1, 0, this.inputIndex); } else { this.handleInput(0, dy>0?1:-1, this.inputIndex); } } this.inputStart = null; this.inputCurrent = null; this.inputIndex = null; }
         };
 
-        // --- BOOT SEQUENCE ---
-        window.onload = () => {
-            PWA.init();
-        };
-
+        window.onload = () => { PWA.init(); };
     </script>
 </body>
 </html>
