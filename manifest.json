@@ -1,0 +1,17 @@
+{
+  "name": "COHERENCE",
+  "short_name": "COHERENCE",
+  "description": "The Alignment Protocol. A minimalist synchronized puzzle game.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#050505",
+  "orientation": "landscape",
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
