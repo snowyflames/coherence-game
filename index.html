@@ -161,7 +161,7 @@
             <!-- iOS Instructions -->
             <div id="ios-guide" class="ios-instructions">
                 <p><strong>IOS DETECTED</strong></p>
-                <p>1. Tap the Share Button below</p>
+                <p>1. Tap the Share Button <img src="https://img.icons8.com/ios-glyphs/30/ffffff/share-rounded.png" style="width:15px; vertical-align:middle"></p>
                 <p>2. Select "Add to Home Screen"</p>
             </div>
 
@@ -259,24 +259,28 @@
             deferredPrompt: null,
 
             init() {
+                // Register Service Worker (REQUIRED for Install Button)
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.register('./sw.js')
+                        .then(() => console.log('Service Worker Registered'))
+                        .catch((err) => console.log('SW Failed:', err));
+                }
+
                 const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
                 
                 if (isStandalone) {
-                    // App is already installed and running: Launch Game
                     this.launchGame();
                 } else {
-                    // Running in browser: Show Installer
-                    // Listen for the browser's "Ready to install" event
+                    // Install Prompt Listener
                     window.addEventListener('beforeinstallprompt', (e) => {
                         e.preventDefault();
                         this.deferredPrompt = e;
-                        // Show our custom button
                         const btn = document.getElementById('install-trigger');
-                        btn.style.display = 'block';
+                        btn.style.display = 'block'; // SHOW BUTTON ONLY WHEN READY
                         btn.addEventListener('click', () => this.triggerInstall());
                     });
 
-                    // iOS Detection (Since iOS doesn't support the prompt event)
+                    // iOS Detection
                     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
                     if (isIOS) {
                         document.getElementById('install-trigger').style.display = 'none';
@@ -290,9 +294,8 @@
                     this.deferredPrompt.prompt();
                     this.deferredPrompt.userChoice.then((choiceResult) => {
                         if (choiceResult.outcome === 'accepted') {
-                            console.log('User accepted the install prompt');
+                            this.deferredPrompt = null;
                         }
-                        this.deferredPrompt = null;
                     });
                 }
             },
@@ -304,9 +307,7 @@
             launchGame() {
                 document.getElementById('installer-screen').style.display = 'none';
                 document.getElementById('app-root').style.display = 'block';
-                Game.init(); // Start the game engine
-                
-                // Init Audio context on first click in game
+                Game.init(); 
                 document.body.addEventListener('click', () => {
                     if(!AudioSys.ctx) AudioSys.init();
                 }, {once:true});
